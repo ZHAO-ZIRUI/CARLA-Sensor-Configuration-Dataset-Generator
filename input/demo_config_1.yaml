@@ -1,0 +1,22 @@
+-
+ blueprint_name: 'sensor.camera.rgb'
+ transform:
+  x: 0.8
+  y: 0.0
+  z: 1.8
+  pitch: 0.0
+  yaw: 0.0
+  roll: 0.0
+ attribute:
+  image_size_x: 1920
+  image_size_y: 1920
+-
+ blueprint_name: 'sensor.lidar.ray_cast'
+ transform:
+  x: 0.0
+  y: 0.0
+  z: 1.8
+  pitch: 0.0
+  yaw: 0.0
+  roll: 0.0
+ attribute:

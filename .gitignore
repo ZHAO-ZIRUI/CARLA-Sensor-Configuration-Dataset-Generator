@@ -1,0 +1,10 @@
+venv
+__pycache__/
+
+output/*
+!output/.gitkeep
+
+input/*
+!input/.gitkeep
+!input/demo_config_1.yaml
+!input/demo_config_2.yaml
