@@ -30,8 +30,8 @@ The following diagram illustrates the process and the terminology used:
 
 - Python 3.8.X Environment
 - Special version of the self-built CARLA Simulator (Includes customised maps and assets)
-  - Windows: [Github Release]() / [Baidu Netdisk](https://pan.baidu.com/s/1gunABaw2A10OQiTd1C9uig?pwd=kk93)
-  - Linux: [Github Release]() / [Baidu Netdisk](https://pan.baidu.com/s/1YrpKcAGLfnTv4o7DrSS9qQ?pwd=w625)
+  - Windows: [OneDrive](https://1drv.ms/u/s!AlsjJokLSSi8gekoeku4vFsb4ZAYew?e=J0gQIM) / [Baidu Netdisk](https://pan.baidu.com/s/1gunABaw2A10OQiTd1C9uig?pwd=kk93)
+  - Linux: [OneDrive](https://1drv.ms/u/s!AlsjJokLSSi8gekniz4iciEvE22a0g?e=p7DDtY) / [Baidu Netdisk](https://pan.baidu.com/s/1YrpKcAGLfnTv4o7DrSS9qQ?pwd=w625)
 
 ## Install
 
