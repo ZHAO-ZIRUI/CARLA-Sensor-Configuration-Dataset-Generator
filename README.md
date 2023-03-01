@@ -1,8 +1,8 @@
-# CARLA Sensor Configuration Iterator
+# CARLA Sensor Configuration Dataset Generator
 
 **VERSION: 0.1.0**
 
-The CARLA Sensor Configuration Iterator is an open-source programme that allows you to generate a [CARLA Simulator](https://github.com/carla-simulator/carla) dataset that is based on a sensor configuration file specified by the user. 
+The CARLA Sensor Configuration Dataset Generator is an open-source programme that allows you to generate a [CARLA Simulator](https://github.com/carla-simulator/carla) dataset that is based on a sensor configuration file specified by the user. 
 
 ## Processes and Trials
 
