@@ -14,6 +14,13 @@ from asq import query
 from loguru import logger
 
 # region Classes
+class ScenarioInfo:
+    def __init__(self, name, path, t_start, t_end, ego_actor_id) -> None:
+        self.name = name
+        self.record_path = os.path.join(runtime.app_root_path, os.path.abspath(path))
+        self.time_start = t_start
+        self.time_end = t_end
+        self.ego_vehicle_actor_id = ego_actor_id
 
 class SensorInfo:
     def __init__(self, blueprint_name, transform=carla.Transform) -> None:
