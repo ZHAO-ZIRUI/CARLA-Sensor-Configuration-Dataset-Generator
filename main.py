@@ -134,6 +134,10 @@ class Job:
         self.logger_header = f'Job [{self.name}]: '
         self.scenario_info = None
 
+    @property
+    def output_directory_path(self):
+        return os.path.join(runtime.io_output_directory, self.name, self.scenario_info.name)
+
     def _enter_sync_mode(self):
         settings = self.world.get_settings()
         settings.synchronous_mode = True
