@@ -130,7 +130,6 @@ class Job:
         self.target_actor = None
         self.sensor_objs = list()
         self.sensor_infos = sensor_infos
-        self.output_directory_path = os.path.join(runtime.io_output_directory, self.name)
         self.logger_header = f'Job [{self.name}]: '
         self.scenario_info = None
 
@@ -153,7 +152,6 @@ class Job:
         logger.info(f'{self.logger_header}CARLA Simulator exit sync mode')
 
     def bind_scenario_info(self, info:ScenarioInfo):
-        self.scenario_info = info
         logger.info(f'{self.logger_header}Bind scenario info: [{self.scenario_info.name}]')
 
     def setup(self):
@@ -350,27 +348,15 @@ if __name__=='__main__':
     scenario_info_loader = ScenarioInfoYamlLoader()
     loaded_scenario_infos = scenario_info_loader.load_all()
     
-    # mix job and scenario
-    jobs = list()
-    for loaded_job in loaded_jobs:
-        for loaded_scenario_info in loaded_scenario_infos:
-            if not isinstance(loaded_job, Job):
-                logger.error('Internal program error')
-                exit(1)
-            if not isinstance(loaded_scenario_info, ScenarioInfo):
-                logger.error('Internal program error')
-                exit(1)
-            loaded_job.bind_scenario_info(loaded_scenario_info)
-            jobs.append(loaded_job)
-    logger.success(f'Jobs loaded complete, count: [{len(jobs)}]')
-    
     # start exec jobs
     logger.success('='*20 + 'BEGIN JOB EXEC' + '='*20)
-    for job in jobs:
-        if not isinstance(job, Job):
-            continue
-        job.setup()
-        job.exec()
+    for job in loaded_jobs:
+        for scenario_info in loaded_scenario_infos:
+            job.bind_scenario_info(scenario_info)
+            if not isinstance(job, Job):
+                continue
+            job.setup()
+            job.exec()
 
     logger.success('='*20 + 'FINISH JOB EXEC' + '='*20)
     logger.success('DONE.')
