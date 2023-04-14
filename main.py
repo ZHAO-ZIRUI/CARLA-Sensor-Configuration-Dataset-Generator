@@ -132,6 +132,7 @@ class Job:
         self.sensor_infos = sensor_infos
         self.output_directory_path = os.path.join(runtime.io_output_directory, self.name)
         self.logger_header = f'Job [{self.name}]: '
+        self.scenario_info = None
 
     def _enter_sync_mode(self):
         settings = self.world.get_settings()
@@ -146,15 +147,6 @@ class Job:
         settings.fixed_delta_seconds = 0.0
         self.world.apply_settings(settings)
         logger.info(f'{self.logger_header}CARLA Simulator exit sync mode')
-
-    def _data_callback(self, data, name):
-        if not self.is_recording:
-            return
-        if isinstance(data, carla.Image):
-            # save_path = os.path.join(self.output_directory_path, dir_name, f'{data.frame}.png')
-            # data.save_to_disk(save_path)
-            print(data.frame)
-            print(name)
 
     def setup(self):
         logger.info(f'{self.logger_header}Begin setup')
