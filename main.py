@@ -302,18 +302,6 @@ class JobYamlLoader:
 
 # MAIN ENTRY
 if __name__=='__main__':
-    # region Application Setup
-    # setup logger
-    logger.remove()
-    logger.add(sys.stdout, 
-        colorize=True, 
-        format=runtime.app_loguru_format,
-        level=runtime.app_loguru_level)
-    
-    # log app start to confirm entry
-    logger.success('Application start.')
-    # endregion
-
     # region Arguments & Runtime Setup
     # setup argparse
     parser = argparse.ArgumentParser(description=text.argparse_description, epilog=text.argparse_epilog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -341,6 +329,18 @@ if __name__=='__main__':
     runtime.carla_sim_step_time = args.delta_t
     # log args decode and runtime setup complete
     logger.success('Runtime loads complete.')
+    # endregion
+
+    # region Application Setup
+    # setup logger
+    logger.remove()
+    logger.add(sys.stdout, 
+        colorize=True, 
+        format=runtime.app_loguru_format,
+        level=runtime.app_loguru_level)
+    
+    # log app start to confirm entry
+    logger.success('Application start.')
     # endregion
 
     # region MAIN
