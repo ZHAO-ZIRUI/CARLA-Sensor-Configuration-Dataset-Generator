@@ -356,18 +356,19 @@ if __name__=='__main__':
             if not isinstance(loaded_scenario_info, ScenarioInfo):
                 logger.error('Internal program error')
                 exit(1)
-            logger.debug(f'Mix job and scenario: [{loaded_job.name} - {loaded_scenario_info.name}]')
             loaded_job.bind_scenario_info(loaded_scenario_info)
             jobs.append(loaded_job)
     logger.success(f'Jobs loaded complete, count: [{len(jobs)}]')
     
+    # start exec jobs
+    logger.success('='*20 + 'BEGIN JOB EXEC' + '='*20)
     for job in jobs:
         if not isinstance(job, Job):
             continue
         job.setup()
         job.exec()
 
-    logger.success('')
+    logger.success('='*20 + 'FINISH JOB EXEC' + '='*20)
     logger.success('DONE.')
     # endregion
     
