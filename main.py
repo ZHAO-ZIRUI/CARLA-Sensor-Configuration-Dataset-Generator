@@ -234,14 +234,17 @@ class Job:
         return self
     
     def clean(self):
+        time.sleep(runtime.carla_setup_wait_time)
         sensor_actors = list()
         for s in self.sensor_objs:
             sensor_actors.append(s.sensor_actor)
+            s.sensor_actor.stop()
         self.client.apply_batch([carla.command.DestroyActor(x) for x in sensor_actors])
         self.client = None
         self.world = None
         self.vehicle_actor = None
         self.sensor_objs = list()
+        time.sleep(runtime.carla_setup_wait_time)
 
 class JobYamlLoader:
     def __init__(self) -> None:
