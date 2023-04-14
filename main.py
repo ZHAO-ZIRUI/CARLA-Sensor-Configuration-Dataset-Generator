@@ -172,32 +172,10 @@ class Job:
         # connect to carla
         self.client = carla.Client(runtime.carla_ip_addr, runtime.carla_port)
 
-        # load new world 
-        self.world = self.client.load_world(runtime.carla_map_name)
-
-        # spawn vehicle
-        vehicle_bp = self.world.get_blueprint_library().find(runtime.carla_vehicle_bp_name)
-        vehicle_tf = carla.Transform(
-            carla.Location(runtime.carla_vehicle_transform[0], 
-                           runtime.carla_vehicle_transform[1],
-                           runtime.carla_vehicle_transform[2]),
-            carla.Rotation(runtime.carla_vehicle_transform[3], 
-                           runtime.carla_vehicle_transform[4],
-                           runtime.carla_vehicle_transform[5])
-        )
-        self.vehicle_actor = self.world.try_spawn_actor(vehicle_bp, vehicle_tf)
-        logger.info(f'{self.logger_header}Vehicle [{runtime.carla_vehicle_bp_name}] spawnned at [{runtime.carla_vehicle_transform}]')
-        
-        # spawn target
-        target_bp_name = random.choice(runtime.carla_target_bp_name_options)
-        target_bp = self.world.get_blueprint_library().find(target_bp_name)
-        target_init_r = random.uniform(runtime.carla_target_r_min, runtime.carla_target_r_max)
-        target_tf = carla.Transform(
-            carla.Location(target_init_r, 0, 0),
-            carla.Rotation(0, 0, 0)
-        )
-        self.target_actor = self.world.try_spawn_actor(target_bp, target_tf)
-        logger.info(f'{self.logger_header}Vehicle [{target_bp_name}] spawnned at [({target_init_r}, 0, 0, 0, 0, 0)]')
+        # decode scenario file and load new world
+        world_name = self.client.show_recorder_file_info(self.scenario_info.record_path, False).splitlines()[1].replace('Map: ', '')
+        logger.info(f'{self.logger_header}Load map[{world_name}] by sceanrio: [{self.scenario_info.name}]')
+        self.world = self.client.load_world(world_name)
 
         # spawn sensors
         sensor_counter = 0
