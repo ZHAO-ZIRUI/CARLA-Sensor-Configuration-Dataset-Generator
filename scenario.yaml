@@ -1,12 +1,12 @@
 - 
- name: 'demo-scenario-1'
+ name: 'demo_scenario_1'
  record_file: './scenarios/demo1.log'
  ego_vehicle_actor_id: 84
  time:
   start: 5
   end: 38
 - 
- name: 'demo-scenario-2'
+ name: 'demo_scenario_2'
  record_file: './scenarios/demo2.log'
  ego_vehicle_actor_id: 197
  time:
