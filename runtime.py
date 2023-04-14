@@ -27,3 +27,5 @@ carla_target_r_max = 25
 
 carla_sim_step_time = 0.5
 carla_sim_max_count = 20
+
+scenario_config_filepath = './scenario.yaml'
