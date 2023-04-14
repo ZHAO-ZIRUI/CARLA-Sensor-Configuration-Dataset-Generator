@@ -22,6 +22,31 @@ class ScenarioInfo:
         self.time_end = t_end
         self.ego_vehicle_actor_id = ego_actor_id
 
+class ScenarioInfoYamlLoader:
+    def __init__(self) -> None:
+        self.logger_header = f'ScenarioInfoYamlLoader: '
+    
+    def load_all(self) -> list:
+        scenario_list = list()
+        yaml_file_abspath = os.path.abspath(os.path.join(runtime.app_root_path, os.path.normpath(runtime.scenario_config_filepath)))
+        logger.info(f'{self.logger_header}Starts loading YAML scenario info file from: [{yaml_file_abspath}]')
+        if not os.path.exists(yaml_file_abspath):
+            logger.error(f'{self.logger_header}Input Error: ScenarioInfo file [{yaml_file_abspath}] not exists.')
+            exit(1)
+        # exec load
+        with open(yaml_file_abspath, 'r', encoding='utf8') as f:
+            yaml_data = yaml.load(f, Loader=yaml.FullLoader)
+        # decode yaml file
+        for d in yaml_data:
+            info = ScenarioInfo(d['name'], d['record_file'], d['time']['start'], d['time']['end'], d['ego_vehicle_actor_id'])
+            logger.debug(f'{self.logger_header}{info.name}/record_path: [{info.record_path}]')
+            logger.debug(f'{self.logger_header}{info.name}/time_start: [{info.time_start}]')
+            logger.debug(f'{self.logger_header}{info.name}/time_end: [{info.time_end}]')
+            logger.debug(f'{self.logger_header}{info.name}/ego_vehicle_actor_id: [{info.ego_vehicle_actor_id}]')
+            scenario_list.append(info)
+            logger.success(f'{self.logger_header}Successfully loading scenario: [{info.name}]')
+        return scenario_list
+
 class SensorInfo:
     def __init__(self, blueprint_name, transform=carla.Transform) -> None:
         self.blueprint_name = blueprint_name
