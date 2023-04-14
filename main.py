@@ -156,6 +156,7 @@ class Job:
         logger.info(f'{self.logger_header}CARLA Simulator exit sync mode')
 
     def bind_scenario_info(self, info:ScenarioInfo):
+        self._scenario_info =  info
         logger.info(f'{self.logger_header}Bind scenario info: [{self.scenario_info.name}]')
 
     def setup(self):
