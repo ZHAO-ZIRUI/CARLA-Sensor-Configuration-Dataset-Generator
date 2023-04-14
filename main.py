@@ -127,10 +127,8 @@ class Job:
         self.client = None
         self.world = None
         self.vehicle_actor = None
-        self.target_actor = None
         self.sensor_objs = list()
         self.sensor_infos = sensor_infos
-        self.logger_header = f'Job [{self.name}]: '
         self._scenario_info = None
 
     @property
@@ -184,6 +182,10 @@ class Job:
         logger.info(f'{self.logger_header}Load map[{world_name}] by sceanrio: [{self.scenario_info.name}]')
         self.world = self.client.load_world(world_name)
 
+        # spawn scenario actors
+        self.client.replay_file(self.scenario_info.record_path, 0.0, 0.1, self.scenario_info.ego_vehicle_actor_id, False)
+        self.vehicle_actor = self.world.get_actor(self.scenario_info.ego_vehicle_actor_id)
+
         # spawn sensors
         sensor_counter = 0
         for sensor_info in self.sensor_infos:
@@ -216,16 +218,8 @@ class Job:
                 for s in self.sensor_objs:
                     s.start_recording()
             counter += 1
-            target_r = random.uniform(runtime.carla_target_r_min, runtime.carla_target_r_max)
-            target_x = random.uniform(-1.0 * target_r, 1.0 * target_r)
-            target_y = random.choice((-1.0, 1.0)) * math.pow((math.pow(target_r, 2) - math.pow(target_x, 2)), 0.5)
-            target_yaw = random.uniform(0, 360)
-            target_new_tf = carla.Transform(
-                carla.Location(target_x, target_y, 0),
-                carla.Rotation(0, target_yaw, 0))
-            self.target_actor.set_transform(target_new_tf)
-            logger.info(f'{self.logger_header}[{counter}/{max_counter}] Collecting sensor data. Target info: ' +
-                        f'[x:{round(target_x, 2)}, y:{round(target_y, 2)}, r:{round(target_r, 2)}, yaw:{round(target_yaw, 2)}]')
+
+            logger.info(f'{self.logger_header}[{counter}/{max_counter}] Collecting sensor data.')
             self.world.tick()
             time.sleep(runtime.carla_sim_step_time)
 
@@ -239,6 +233,16 @@ class Job:
         logger.success(f'{self.logger_header}Job completed.')
         return self
     
+    def clean(self):
+        sensor_actors = list()
+        for s in self.sensor_objs:
+            sensor_actors.append(s.sensor_actor)
+        self.client.apply_batch([carla.command.DestroyActor(x) for x in sensor_actors])
+        self.client = None
+        self.world = None
+        self.vehicle_actor = None
+        self.sensor_objs = list()
+
 class JobYamlLoader:
     def __init__(self) -> None:
         self.logger_header = f'JobYamlLoader: '
@@ -347,6 +351,7 @@ if __name__=='__main__':
                 continue
             job.setup()
             job.exec()
+            job.clean()
 
     logger.success('='*20 + 'FINISH JOB EXEC' + '='*20)
     logger.success('DONE.')
