@@ -148,6 +148,10 @@ class Job:
         self.world.apply_settings(settings)
         logger.info(f'{self.logger_header}CARLA Simulator exit sync mode')
 
+    def bind_scenario_info(self, info:ScenarioInfo):
+        self.scenario_info = info
+        logger.info(f'{self.logger_header}Bind scenario info: [{self.scenario_info.name}]')
+
     def setup(self):
         logger.info(f'{self.logger_header}Begin setup')
         # create folder
@@ -346,7 +350,15 @@ if __name__=='__main__':
     jobs = list()
     for loaded_job in loaded_jobs:
         for loaded_scenario_info in loaded_scenario_infos:
+            if not isinstance(loaded_job, Job):
+                logger.error('Internal program error')
+                exit(1)
+            if not isinstance(loaded_scenario_info, ScenarioInfo):
+                logger.error('Internal program error')
+                exit(1)
             logger.debug(f'Mix job and scenario: [{loaded_job.name} - {loaded_scenario_info.name}]')
+            loaded_job.bind_scenario_info(loaded_scenario_info)
+            jobs.append(loaded_job)
     logger.success(f'Jobs loaded complete, count: [{len(jobs)}]')
     
     for job in jobs:
