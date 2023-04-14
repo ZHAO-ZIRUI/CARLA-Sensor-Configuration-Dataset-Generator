@@ -343,14 +343,27 @@ if __name__=='__main__':
     logger.success('Runtime loads complete.')
     # endregion
 
-    # region Jobs
+    # region MAIN
     job_loader = JobYamlLoader()
-    jobs = job_loader.load_all(runtime.io_input_directory)
+    loaded_jobs = job_loader.load_all(runtime.io_input_directory)
+
+    scenario_info_loader = ScenarioInfoYamlLoader()
+    loaded_scenario_infos = scenario_info_loader.load_all()
+    
+    # mix job and scenario
+    jobs = list()
+    for loaded_job in loaded_jobs:
+        for loaded_scenario_info in loaded_scenario_infos:
+            logger.debug(f'Mix job and scenario: [{loaded_job.name} - {loaded_scenario_info.name}]')
+    logger.success(f'Jobs loaded complete, count: [{len(jobs)}]')
     
     for job in jobs:
         if not isinstance(job, Job):
             continue
         job.setup()
         job.exec()
+
+    logger.success('')
+    logger.success('DONE.')
     # endregion
     
