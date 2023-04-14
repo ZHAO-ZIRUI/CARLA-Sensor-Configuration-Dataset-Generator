@@ -144,9 +144,9 @@ class Job:
     @property
     def logger_header(self):
         if self._scenario_info:
-            return f'Job [{self.name}/{self._scenario_info.name}]: '
+            return f'Job [{self.name} / {self._scenario_info.name}]: '
         else:
-            return f'Job [{self.name}/?]: '
+            return f'Job [{self.name} / ?]: '
 
     def _enter_sync_mode(self):
         settings = self.world.get_settings()
