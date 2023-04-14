@@ -254,14 +254,6 @@ class Job:
 class JobYamlLoader:
     def __init__(self) -> None:
         self.logger_header = f'JobYamlLoader: '
-
-    def load_demo(self) -> list:
-        demo_sensor_0 = SensorInfo('sensor.camera.rgb', carla.Transform(carla.Location(x=0.8, z=1.7)))
-        demo_sensor_1 = SensorInfo('sensor.lidar.ray_cast', carla.Transform(carla.Location(z=1.7)))
-        demo_sensor_2 = SensorInfo('sensor.other.radar', carla.Transform(carla.Location(z=1.7)))
-        job = Job('Demo', {demo_sensor_0, demo_sensor_1, demo_sensor_2})
-        logger.warning(f'{self.logger_header}Job [Demo] loaded. Application is running in demo mode')
-        return {job}
         
     def load_all(self, load_path):
         logger.info(f'{self.logger_header}Starts loading YAML config files from: [{load_path}]')
@@ -329,7 +321,6 @@ if __name__=='__main__':
     parser.add_argument('--carla-port', type=int, help=text.argparse_carla_port, default=runtime.carla_port)
     parser.add_argument('-i', '--input', type=str, help=text.argparse_input, default=runtime.io_input_directory)
     parser.add_argument('-o', '--output', type=str, help=text.argparse_output, default=runtime.io_output_directory)
-    parser.add_argument('--demo', help=text.argparse_demo, action="store_true")
     parser.add_argument('--r-min', type=float, help=text.argparse_r_min, default=runtime.carla_target_r_min)
     parser.add_argument('--r-max', type=float, help=text.argparse_r_max, default=runtime.carla_target_r_max)
     parser.add_argument('-c', '--count', type=int, help=text.argparse_count, default=runtime.carla_sim_max_count)
@@ -344,7 +335,6 @@ if __name__=='__main__':
     runtime.carla_port = args.carla_port
     runtime.io_input_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.input))
     runtime.io_output_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.output))
-    runtime.app_is_demo = args.demo
     runtime.carla_target_r_min = args.r_min
     runtime.carla_target_r_max = args.r_max
     runtime.carla_sim_max_count = args.count
@@ -354,12 +344,8 @@ if __name__=='__main__':
     # endregion
 
     # region Jobs
-    jobs = list()
     job_loader = JobYamlLoader()
-    if runtime.app_is_demo:
-        jobs.extend(job_loader.load_demo())
-    else:
-        jobs.extend(job_loader.load_all(runtime.io_input_directory))
+    jobs = job_loader.load_all(runtime.io_input_directory)
     
     for job in jobs:
         if not isinstance(job, Job):
