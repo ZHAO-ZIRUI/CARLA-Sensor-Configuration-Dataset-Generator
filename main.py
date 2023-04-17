@@ -202,6 +202,16 @@ class Job:
     def exec(self):
         logger.info(f'{self.logger_header}Start execute')
 
+        # calculate replay time
+        replay_times = list()
+        total_t = self.scenario_info.time_end - self.scenario_info.time_start
+        delta_t = total_t / (runtime.carla_sim_max_count + 1)
+        current_t = self.scenario_info.time_start
+        for i in range(runtime.carla_sim_max_count):
+            current_t = current_t + delta_t + random.uniform(-1,1)
+            replay_times.append(current_t)
+        logger.info(f'{self.logger_header}Replay sequence (length:{len(replay_times)}) set to: [{replay_times}]')
+
         # enter sync mode
         # self._enter_sync_mode()
         # time.sleep(runtime.carla_sync_wait_time)
@@ -215,6 +225,11 @@ class Job:
                     s.start_recording()
             counter += 1
 
+            # update scenario
+            self.client.replay_file(self.scenario_info.record_path, replay_times[counter-1], 0.1, self.scenario_info.ego_vehicle_actor_id, False)
+            time.sleep(1)
+
+            # collect sensor data
             logger.info(f'{self.logger_header}[{counter}/{max_counter}] Collecting sensor data.')
             for s in self.sensor_objs:
                 s.record_this()
