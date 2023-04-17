@@ -212,10 +212,6 @@ class Job:
             replay_times.append(current_t)
         logger.info(f'{self.logger_header}Replay sequence (length:{len(replay_times)}) set to: [{replay_times}]')
 
-        # enter sync mode
-        # self._enter_sync_mode()
-        # time.sleep(runtime.carla_sync_wait_time)
-
         # main loop
         counter = 0
         max_counter = runtime.carla_sim_max_count
@@ -227,7 +223,7 @@ class Job:
 
             # update scenario
             self.client.replay_file(self.scenario_info.record_path, replay_times[counter-1], 0.1, self.scenario_info.ego_vehicle_actor_id, False)
-            time.sleep(1)
+            time.sleep(runtime.carla_sim_step_wait_scenario_time)
 
             # collect sensor data
             logger.info(f'{self.logger_header}[{counter}/{max_counter}] Collecting sensor data.')
@@ -235,13 +231,11 @@ class Job:
                 s.record_this()
 
             # self.world.tick()
-            time.sleep(runtime.carla_sim_step_time)
+            time.sleep(runtime.carla_sim_step_wait_record_time)
 
+        # stop recording
         for s in self.sensor_objs:
             s.stop_recording()
-
-        # exit sync mode
-        # self._exit_sync_mode()
 
         # end func
         logger.success(f'{self.logger_header}Job completed.')
@@ -318,10 +312,9 @@ if __name__=='__main__':
     parser.add_argument('--carla-port', type=int, help=text.argparse_carla_port, default=runtime.carla_port)
     parser.add_argument('-i', '--input', type=str, help=text.argparse_input, default=runtime.io_input_directory)
     parser.add_argument('-o', '--output', type=str, help=text.argparse_output, default=runtime.io_output_directory)
-    parser.add_argument('--r-min', type=float, help=text.argparse_r_min, default=runtime.carla_target_r_min)
-    parser.add_argument('--r-max', type=float, help=text.argparse_r_max, default=runtime.carla_target_r_max)
     parser.add_argument('-c', '--count', type=int, help=text.argparse_count, default=runtime.carla_sim_max_count)
-    parser.add_argument('-d', '--delta-t', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_time)
+    parser.add_argument('-s', '--wait-scenario', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_wait_scenario_time)
+    parser.add_argument('-r', '--wait-record', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_wait_record_time)
     parser.add_argument('--log', type=str, help=text.argparse_help_none, default=runtime.app_loguru_level)
     
     # setup runtimes
@@ -332,10 +325,9 @@ if __name__=='__main__':
     runtime.carla_port = args.carla_port
     runtime.io_input_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.input))
     runtime.io_output_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.output))
-    runtime.carla_target_r_min = args.r_min
-    runtime.carla_target_r_max = args.r_max
     runtime.carla_sim_max_count = args.count
-    runtime.carla_sim_step_time = args.delta_t
+    runtime.carla_sim_step_wait_scenario_time = args.wait_scenario
+    runtime.carla_sim_step_wait_record_time = args.wait_record
     # log args decode and runtime setup complete
     logger.success('Runtime loads complete.')
     # endregion
