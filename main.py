@@ -63,10 +63,20 @@ class Sensor:
         self.world = world
         self.vehicle_actor = target
         self.output_directory_path = output_dir
+        self.record_counter_target = 0
+        self.record_counter_current = 0
+
+    def record_this(self):
+        self.record_counter_target += 1
+        logger.debug(f'{self.logger_header} received <record this> cmd, target: [{self.record_counter_target}]')
+
 
     def _data_callback(self, data):
         if not self._is_recording:
             return
+        if self.record_counter_current >= self.record_counter_target:
+            return
+        self.record_counter_current += 1
         save_path = os.path.join(self.output_directory_path, str(self.seq_id))
         if isinstance(data, carla.Image):
             save_fullname = os.path.join(save_path, f'{data.frame}.png' )
@@ -146,20 +156,6 @@ class Job:
         else:
             return f'Job [{self.name} / ?]: '
 
-    def _enter_sync_mode(self):
-        settings = self.world.get_settings()
-        settings.synchronous_mode = True
-        settings.fixed_delta_seconds = runtime.carla_fixed_delta_time
-        self.world.apply_settings(settings)
-        logger.info(f'{self.logger_header}CARLA Simulator enter sync mode')
-
-    def _exit_sync_mode(self):
-        settings = self.world.get_settings()
-        settings.synchronous_mode = False
-        settings.fixed_delta_seconds = 0.0
-        self.world.apply_settings(settings)
-        logger.info(f'{self.logger_header}CARLA Simulator exit sync mode')
-
     def bind_scenario_info(self, info:ScenarioInfo):
         self._scenario_info =  info
         logger.info(f'{self.logger_header}Bind scenario info: [{self.scenario_info.name}]')
@@ -207,8 +203,8 @@ class Job:
         logger.info(f'{self.logger_header}Start execute')
 
         # enter sync mode
-        self._enter_sync_mode()
-        time.sleep(runtime.carla_sync_wait_time)
+        # self._enter_sync_mode()
+        # time.sleep(runtime.carla_sync_wait_time)
 
         # main loop
         counter = 0
@@ -220,14 +216,17 @@ class Job:
             counter += 1
 
             logger.info(f'{self.logger_header}[{counter}/{max_counter}] Collecting sensor data.')
-            self.world.tick()
+            for s in self.sensor_objs:
+                s.record_this()
+
+            # self.world.tick()
             time.sleep(runtime.carla_sim_step_time)
 
         for s in self.sensor_objs:
             s.stop_recording()
 
         # exit sync mode
-        self._exit_sync_mode()
+        # self._exit_sync_mode()
 
         # end func
         logger.success(f'{self.logger_header}Job completed.')
