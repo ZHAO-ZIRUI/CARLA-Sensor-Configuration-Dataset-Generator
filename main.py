@@ -179,7 +179,7 @@ class Job:
         self.world = self.client.load_world(world_name)
 
         # spawn scenario actors
-        self.client.replay_file(self.scenario_info.record_path, 0.0, 0.1, self.scenario_info.ego_vehicle_actor_id, False)
+        self.client.replay_file(self.scenario_info.record_path, 0.0, 0.3, self.scenario_info.ego_vehicle_actor_id, False)
         self.vehicle_actor = self.world.get_actor(self.scenario_info.ego_vehicle_actor_id)
 
         # spawn sensors
@@ -208,7 +208,7 @@ class Job:
         delta_t = total_t / (runtime.carla_sim_max_count + 1)
         current_t = self.scenario_info.time_start
         for i in range(runtime.carla_sim_max_count):
-            current_t = current_t + delta_t + random.uniform(-1,1)
+            current_t = current_t + delta_t + random.uniform(-1.0 * runtime.carla_sim_time_random, runtime.carla_sim_time_random)
             replay_times.append(current_t)
         logger.info(f'{self.logger_header}Replay sequence (length:{len(replay_times)}) set to: [{replay_times}]')
 
@@ -315,6 +315,7 @@ if __name__=='__main__':
     parser.add_argument('-c', '--count', type=int, help=text.argparse_count, default=runtime.carla_sim_max_count)
     parser.add_argument('-s', '--wait-scenario', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_wait_scenario_time)
     parser.add_argument('-r', '--wait-record', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_wait_record_time)
+    parser.add_argument('--random', type=float, help=text.argparse_help_none, default=runtime.carla_sim_time_random)
     parser.add_argument('--log', type=str, help=text.argparse_help_none, default=runtime.app_loguru_level)
     
     # setup runtimes
@@ -328,6 +329,7 @@ if __name__=='__main__':
     runtime.carla_sim_max_count = args.count
     runtime.carla_sim_step_wait_scenario_time = args.wait_scenario
     runtime.carla_sim_step_wait_record_time = args.wait_record
+    runtime.carla_sim_time_random = args.random
     # log args decode and runtime setup complete
     logger.success('Runtime loads complete.')
     # endregion

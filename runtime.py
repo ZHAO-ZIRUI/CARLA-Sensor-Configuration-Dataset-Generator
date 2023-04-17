@@ -14,5 +14,6 @@ carla_setup_wait_time = 2.0
 carla_sim_step_wait_scenario_time = 1.0
 carla_sim_step_wait_record_time = 1.0
 carla_sim_max_count = 20
+carla_sim_time_random = 0.0
 
 scenario_config_filepath = './scenario.yaml'
