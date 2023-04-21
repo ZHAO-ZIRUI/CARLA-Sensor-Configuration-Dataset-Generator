@@ -2,7 +2,6 @@ app_root_path = None
 app_loguru_format = '<c>{time:YYYY-MM-DD hh:mm:ss.SSSSS}</c> <m>|</m> <lvl>{level:<8}</lvl> <m>|</m> {message}'
 app_loguru_level = 'INFO'
 app_loguru_next_line = '\n' + ' ' * 42
-app_is_demo = False
 
 io_input_directory = './input'
 io_output_directory = './output'
