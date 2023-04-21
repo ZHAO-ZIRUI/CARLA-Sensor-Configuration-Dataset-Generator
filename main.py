@@ -313,9 +313,9 @@ if __name__=='__main__':
     parser.add_argument('-i', '--input', type=str, help=text.argparse_input, default=runtime.io_input_directory)
     parser.add_argument('-o', '--output', type=str, help=text.argparse_output, default=runtime.io_output_directory)
     parser.add_argument('-c', '--count', type=int, help=text.argparse_count, default=runtime.carla_sim_max_count)
-    parser.add_argument('-s', '--wait-scenario', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_wait_scenario_time)
-    parser.add_argument('-r', '--wait-record', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_wait_record_time)
-    parser.add_argument('--random', type=float, help=text.argparse_help_none, default=runtime.carla_sim_time_random)
+    parser.add_argument('-s', '--wait-scenario', type=float, help=text.argparse_wait_scenario, default=runtime.carla_sim_step_wait_scenario_time)
+    parser.add_argument('-r', '--wait-record', type=float, help=text.argparse_wait_record, default=runtime.carla_sim_step_wait_record_time)
+    parser.add_argument('--random', type=float, help=text.argparse_random, default=runtime.carla_sim_time_random)
     parser.add_argument('--log', type=str, help=text.argparse_help_none, default=runtime.app_loguru_level)
     
     # setup runtimes

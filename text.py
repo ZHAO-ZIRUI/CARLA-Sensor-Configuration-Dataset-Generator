@@ -12,6 +12,9 @@ argparse_r_max = "Maximum radius value of the random zone"
 argparse_count = "Number of randomised trials executed per Job"
 argparse_delta_t = "PLEASE READ THE README! Interval between each collection in Job"
 argparse_log = "Log level of the program"
+argparse_wait_scenario = "The time program waits for the CARLA emulator to load scenario slice. If you are experiencing LOD problems (Models and textures do not load as expected), you can increase this value appropriately. Instead you can decrease this value to get a smaller execution time"
+argparse_wait_record = "The time program waits for the CARLA emulator to save image (`.png`) or pointcloud (`.pcd`) data to disk. If the number of your data is incorrect or the data content is missing or corrupted, you can increase this value appropriately. Instead you can decrease this value to get a smaller execution time"
+argparse_random = "This value indicates the randomness of the sampling time point when slicing the scenario"
 
 argparse_epilog = """
 GITHUB: https://github.com/ZHAO-Zirui/CARLA-Sensor-Configuration-Iterator.git
