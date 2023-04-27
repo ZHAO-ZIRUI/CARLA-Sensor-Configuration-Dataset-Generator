@@ -1,6 +1,6 @@
 ## Setup Sensors
 
-In this program, sensor is defined by the sensor configuration file which is encoded in [YAML format](https://yaml.org/). A single `.yaml` file represents a set of sensor settings in this program. And the program also supports multiple config inputs, iterating through all the `.yaml` files in the input folder.
+The sensor configuration file is encoded in [YAML format](https://yaml.org/). A single `.yaml` file represents a set of sensor settings in this program. And the program also supports multiple config inputs, iterating through all the `.yaml` files in the input folder.
 
 A sensor configuration file looks like:
 
