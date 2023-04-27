@@ -14,6 +14,38 @@ from asq import query
 from loguru import logger
 
 # region Classes
+class ScenarioInfo:
+    def __init__(self, name, path, t_start, t_end, ego_actor_id) -> None:
+        self.name = name
+        self.record_path = os.path.join(runtime.app_root_path, os.path.abspath(path))
+        self.time_start = t_start
+        self.time_end = t_end
+        self.ego_vehicle_actor_id = ego_actor_id
+
+class ScenarioInfoYamlLoader:
+    def __init__(self) -> None:
+        self.logger_header = f'ScenarioInfoYamlLoader: '
+    
+    def load_all(self) -> list:
+        scenario_list = list()
+        yaml_file_abspath = os.path.abspath(os.path.join(runtime.app_root_path, os.path.normpath(runtime.scenario_config_filepath)))
+        logger.info(f'{self.logger_header}Starts loading YAML scenario info file from: [{yaml_file_abspath}]')
+        if not os.path.exists(yaml_file_abspath):
+            logger.error(f'{self.logger_header}Input Error: ScenarioInfo file [{yaml_file_abspath}] not exists.')
+            exit(1)
+        # exec load
+        with open(yaml_file_abspath, 'r', encoding='utf8') as f:
+            yaml_data = yaml.load(f, Loader=yaml.FullLoader)
+        # decode yaml file
+        for d in yaml_data:
+            info = ScenarioInfo(d['name'], d['record_file'], d['time']['start'], d['time']['end'], d['ego_vehicle_actor_id'])
+            logger.debug(f'{self.logger_header}{info.name}/record_path: [{info.record_path}]')
+            logger.debug(f'{self.logger_header}{info.name}/time_start: [{info.time_start}]')
+            logger.debug(f'{self.logger_header}{info.name}/time_end: [{info.time_end}]')
+            logger.debug(f'{self.logger_header}{info.name}/ego_vehicle_actor_id: [{info.ego_vehicle_actor_id}]')
+            scenario_list.append(info)
+            logger.success(f'{self.logger_header}Successfully loading scenario: [{info.name}]')
+        return scenario_list
 
 class SensorInfo:
     def __init__(self, blueprint_name, transform=carla.Transform) -> None:
@@ -31,10 +63,20 @@ class Sensor:
         self.world = world
         self.vehicle_actor = target
         self.output_directory_path = output_dir
+        self.record_counter_target = 0
+        self.record_counter_current = 0
+
+    def record_this(self):
+        self.record_counter_target += 1
+        logger.debug(f'{self.logger_header} received <record this> cmd, target: [{self.record_counter_target}]')
+
 
     def _data_callback(self, data):
         if not self._is_recording:
             return
+        if self.record_counter_current >= self.record_counter_target:
+            return
+        self.record_counter_current += 1
         save_path = os.path.join(self.output_directory_path, str(self.seq_id))
         if isinstance(data, carla.Image):
             save_fullname = os.path.join(save_path, f'{data.frame}.png' )
@@ -95,34 +137,28 @@ class Job:
         self.client = None
         self.world = None
         self.vehicle_actor = None
-        self.target_actor = None
         self.sensor_objs = list()
         self.sensor_infos = sensor_infos
-        self.output_directory_path = os.path.join(runtime.io_output_directory, self.name)
-        self.logger_header = f'Job [{self.name}]: '
+        self._scenario_info = None
 
-    def _enter_sync_mode(self):
-        settings = self.world.get_settings()
-        settings.synchronous_mode = True
-        settings.fixed_delta_seconds = runtime.carla_fixed_delta_time
-        self.world.apply_settings(settings)
-        logger.info(f'{self.logger_header}CARLA Simulator enter sync mode')
+    @property
+    def output_directory_path(self):
+        return os.path.join(runtime.io_output_directory, self.name, self.scenario_info.name)
+    
+    @property
+    def scenario_info(self) -> ScenarioInfo:
+        return self._scenario_info
+    
+    @property
+    def logger_header(self):
+        if self._scenario_info:
+            return f'Job [{self.name} / {self._scenario_info.name}]: '
+        else:
+            return f'Job [{self.name} / ?]: '
 
-    def _exit_sync_mode(self):
-        settings = self.world.get_settings()
-        settings.synchronous_mode = False
-        settings.fixed_delta_seconds = 0.0
-        self.world.apply_settings(settings)
-        logger.info(f'{self.logger_header}CARLA Simulator exit sync mode')
-
-    def _data_callback(self, data, name):
-        if not self.is_recording:
-            return
-        if isinstance(data, carla.Image):
-            # save_path = os.path.join(self.output_directory_path, dir_name, f'{data.frame}.png')
-            # data.save_to_disk(save_path)
-            print(data.frame)
-            print(name)
+    def bind_scenario_info(self, info:ScenarioInfo):
+        self._scenario_info =  info
+        logger.info(f'{self.logger_header}Bind scenario info: [{self.scenario_info.name}]')
 
     def setup(self):
         logger.info(f'{self.logger_header}Begin setup')
@@ -137,32 +173,14 @@ class Job:
         # connect to carla
         self.client = carla.Client(runtime.carla_ip_addr, runtime.carla_port)
 
-        # load new world 
-        self.world = self.client.load_world(runtime.carla_map_name)
+        # decode scenario file and load new world
+        world_name = self.client.show_recorder_file_info(self.scenario_info.record_path, False).splitlines()[1].replace('Map: ', '')
+        logger.info(f'{self.logger_header}Load map[{world_name}] by sceanrio: [{self.scenario_info.name}]')
+        self.world = self.client.load_world(world_name)
 
-        # spawn vehicle
-        vehicle_bp = self.world.get_blueprint_library().find(runtime.carla_vehicle_bp_name)
-        vehicle_tf = carla.Transform(
-            carla.Location(runtime.carla_vehicle_transform[0], 
-                           runtime.carla_vehicle_transform[1],
-                           runtime.carla_vehicle_transform[2]),
-            carla.Rotation(runtime.carla_vehicle_transform[3], 
-                           runtime.carla_vehicle_transform[4],
-                           runtime.carla_vehicle_transform[5])
-        )
-        self.vehicle_actor = self.world.try_spawn_actor(vehicle_bp, vehicle_tf)
-        logger.info(f'{self.logger_header}Vehicle [{runtime.carla_vehicle_bp_name}] spawnned at [{runtime.carla_vehicle_transform}]')
-        
-        # spawn target
-        target_bp_name = random.choice(runtime.carla_target_bp_name_options)
-        target_bp = self.world.get_blueprint_library().find(target_bp_name)
-        target_init_r = random.uniform(runtime.carla_target_r_min, runtime.carla_target_r_max)
-        target_tf = carla.Transform(
-            carla.Location(target_init_r, 0, 0),
-            carla.Rotation(0, 0, 0)
-        )
-        self.target_actor = self.world.try_spawn_actor(target_bp, target_tf)
-        logger.info(f'{self.logger_header}Vehicle [{target_bp_name}] spawnned at [({target_init_r}, 0, 0, 0, 0, 0)]')
+        # spawn scenario actors
+        self.client.replay_file(self.scenario_info.record_path, 0.0, 0.3, self.scenario_info.ego_vehicle_actor_id, False)
+        self.vehicle_actor = self.world.get_actor(self.scenario_info.ego_vehicle_actor_id)
 
         # spawn sensors
         sensor_counter = 0
@@ -184,9 +202,15 @@ class Job:
     def exec(self):
         logger.info(f'{self.logger_header}Start execute')
 
-        # enter sync mode
-        self._enter_sync_mode()
-        time.sleep(runtime.carla_sync_wait_time)
+        # calculate replay time
+        replay_times = list()
+        total_t = self.scenario_info.time_end - self.scenario_info.time_start
+        delta_t = total_t / (runtime.carla_sim_max_count + 1)
+        current_t = self.scenario_info.time_start
+        for i in range(runtime.carla_sim_max_count):
+            current_t = current_t + delta_t + random.uniform(-1.0 * runtime.carla_sim_time_random, runtime.carla_sim_time_random)
+            replay_times.append(current_t)
+        logger.info(f'{self.logger_header}Replay sequence (length:{len(replay_times)}) set to: [{replay_times}]')
 
         # main loop
         counter = 0
@@ -196,40 +220,43 @@ class Job:
                 for s in self.sensor_objs:
                     s.start_recording()
             counter += 1
-            target_r = random.uniform(runtime.carla_target_r_min, runtime.carla_target_r_max)
-            target_x = random.uniform(-1.0 * target_r, 1.0 * target_r)
-            target_y = random.choice((-1.0, 1.0)) * math.pow((math.pow(target_r, 2) - math.pow(target_x, 2)), 0.5)
-            target_yaw = random.uniform(0, 360)
-            target_new_tf = carla.Transform(
-                carla.Location(target_x, target_y, 0),
-                carla.Rotation(0, target_yaw, 0))
-            self.target_actor.set_transform(target_new_tf)
-            logger.info(f'{self.logger_header}[{counter}/{max_counter}] Collecting sensor data. Target info: ' +
-                        f'[x:{round(target_x, 2)}, y:{round(target_y, 2)}, r:{round(target_r, 2)}, yaw:{round(target_yaw, 2)}]')
-            self.world.tick()
-            time.sleep(runtime.carla_sim_step_time)
 
+            # update scenario
+            self.client.replay_file(self.scenario_info.record_path, replay_times[counter-1], 0.1, self.scenario_info.ego_vehicle_actor_id, False)
+            time.sleep(runtime.carla_sim_step_wait_scenario_time)
+
+            # collect sensor data
+            logger.info(f'{self.logger_header}[{counter}/{max_counter}] Collecting sensor data.')
+            for s in self.sensor_objs:
+                s.record_this()
+
+            # self.world.tick()
+            time.sleep(runtime.carla_sim_step_wait_record_time)
+
+        # stop recording
         for s in self.sensor_objs:
             s.stop_recording()
-
-        # exit sync mode
-        self._exit_sync_mode()
 
         # end func
         logger.success(f'{self.logger_header}Job completed.')
         return self
     
+    def clean(self):
+        time.sleep(runtime.carla_setup_wait_time)
+        sensor_actors = list()
+        for s in self.sensor_objs:
+            sensor_actors.append(s.sensor_actor)
+            s.sensor_actor.stop()
+        self.client.apply_batch([carla.command.DestroyActor(x) for x in sensor_actors])
+        self.client = None
+        self.world = None
+        self.vehicle_actor = None
+        self.sensor_objs = list()
+        time.sleep(runtime.carla_setup_wait_time)
+
 class JobYamlLoader:
     def __init__(self) -> None:
         self.logger_header = f'JobYamlLoader: '
-
-    def load_demo(self) -> list:
-        demo_sensor_0 = SensorInfo('sensor.camera.rgb', carla.Transform(carla.Location(x=0.8, z=1.7)))
-        demo_sensor_1 = SensorInfo('sensor.lidar.ray_cast', carla.Transform(carla.Location(z=1.7)))
-        demo_sensor_2 = SensorInfo('sensor.other.radar', carla.Transform(carla.Location(z=1.7)))
-        job = Job('Demo', {demo_sensor_0, demo_sensor_1, demo_sensor_2})
-        logger.warning(f'{self.logger_header}Job [Demo] loaded. Application is running in demo mode')
-        return {job}
         
     def load_all(self, load_path):
         logger.info(f'{self.logger_header}Starts loading YAML config files from: [{load_path}]')
@@ -278,6 +305,35 @@ class JobYamlLoader:
 
 # MAIN ENTRY
 if __name__=='__main__':
+    # region Arguments & Runtime Setup
+    # setup argparse
+    parser = argparse.ArgumentParser(description=text.argparse_description, epilog=text.argparse_epilog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--carla-ip-addr', type=str, help=text.argparse_carla_ip_addr, default=runtime.carla_ip_addr)
+    parser.add_argument('--carla-port', type=int, help=text.argparse_carla_port, default=runtime.carla_port)
+    parser.add_argument('-i', '--input', type=str, help=text.argparse_input, default=runtime.io_input_directory)
+    parser.add_argument('-o', '--output', type=str, help=text.argparse_output, default=runtime.io_output_directory)
+    parser.add_argument('-c', '--count', type=int, help=text.argparse_count, default=runtime.carla_sim_max_count)
+    parser.add_argument('-s', '--wait-scenario', type=float, help=text.argparse_wait_scenario, default=runtime.carla_sim_step_wait_scenario_time)
+    parser.add_argument('-r', '--wait-record', type=float, help=text.argparse_wait_record, default=runtime.carla_sim_step_wait_record_time)
+    parser.add_argument('--random', type=float, help=text.argparse_random, default=runtime.carla_sim_time_random)
+    parser.add_argument('--log', type=str, help=text.argparse_help_none, default=runtime.app_loguru_level)
+    
+    # setup runtimes
+    args = parser.parse_args()
+    runtime.app_root_path = os.path.abspath(os.path.dirname(__file__))
+    runtime.app_loguru_level = args.log
+    runtime.carla_ip_addr = args.carla_ip_addr
+    runtime.carla_port = args.carla_port
+    runtime.io_input_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.input))
+    runtime.io_output_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.output))
+    runtime.carla_sim_max_count = args.count
+    runtime.carla_sim_step_wait_scenario_time = args.wait_scenario
+    runtime.carla_sim_step_wait_record_time = args.wait_record
+    runtime.carla_sim_time_random = args.random
+    # log args decode and runtime setup complete
+    logger.success('Runtime loads complete.')
+    # endregion
+
     # region Application Setup
     # setup logger
     logger.remove()
@@ -290,49 +346,25 @@ if __name__=='__main__':
     logger.success('Application start.')
     # endregion
 
-    # region Arguments & Runtime Setup
-    # setup argparse
-    parser = argparse.ArgumentParser(description=text.argparse_description, epilog=text.argparse_epilog, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--carla-ip-addr', type=str, help=text.argparse_carla_ip_addr, default=runtime.carla_ip_addr)
-    parser.add_argument('--carla-port', type=int, help=text.argparse_carla_port, default=runtime.carla_port)
-    parser.add_argument('-i', '--input', type=str, help=text.argparse_input, default=runtime.io_input_directory)
-    parser.add_argument('-o', '--output', type=str, help=text.argparse_output, default=runtime.io_output_directory)
-    parser.add_argument('--demo', help=text.argparse_demo, action="store_true")
-    parser.add_argument('--r-min', type=float, help=text.argparse_r_min, default=runtime.carla_target_r_min)
-    parser.add_argument('--r-max', type=float, help=text.argparse_r_max, default=runtime.carla_target_r_max)
-    parser.add_argument('-c', '--count', type=int, help=text.argparse_count, default=runtime.carla_sim_max_count)
-    parser.add_argument('-d', '--delta-t', type=float, help=text.argparse_help_none, default=runtime.carla_sim_step_time)
-    parser.add_argument('--log', type=str, help=text.argparse_help_none, default=runtime.app_loguru_level)
-    
-    # setup runtimes
-    args = parser.parse_args()
-    runtime.app_root_path = os.path.abspath(os.path.dirname(__file__))
-    runtime.app_loguru_level = args.log
-    runtime.carla_ip_addr = args.carla_ip_addr
-    runtime.carla_port = args.carla_port
-    runtime.io_input_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.input))
-    runtime.io_output_directory = os.path.join(runtime.app_root_path, os.path.normpath(args.output))
-    runtime.app_is_demo = args.demo
-    runtime.carla_target_r_min = args.r_min
-    runtime.carla_target_r_max = args.r_max
-    runtime.carla_sim_max_count = args.count
-    runtime.carla_sim_step_time = args.delta_t
-    # log args decode and runtime setup complete
-    logger.success('Runtime loads complete.')
-    # endregion
-
-    # region Jobs
-    jobs = list()
+    # region MAIN
     job_loader = JobYamlLoader()
-    if runtime.app_is_demo:
-        jobs.extend(job_loader.load_demo())
-    else:
-        jobs.extend(job_loader.load_all(runtime.io_input_directory))
+    loaded_jobs = job_loader.load_all(runtime.io_input_directory)
+
+    scenario_info_loader = ScenarioInfoYamlLoader()
+    loaded_scenario_infos = scenario_info_loader.load_all()
     
-    for job in jobs:
-        if not isinstance(job, Job):
-            continue
-        job.setup()
-        job.exec()
+    # start exec jobs
+    logger.success('='*20 + 'BEGIN JOB EXEC' + '='*20)
+    for job in loaded_jobs:
+        for scenario_info in loaded_scenario_infos:
+            job.bind_scenario_info(scenario_info)
+            if not isinstance(job, Job):
+                continue
+            job.setup()
+            job.exec()
+            job.clean()
+
+    logger.success('='*20 + 'FINISH JOB EXEC' + '='*20)
+    logger.success('DONE.')
     # endregion
     
